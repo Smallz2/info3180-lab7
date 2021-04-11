@@ -22,6 +22,9 @@ app.component('app-header', {
           <li class="nav-item active">
             <router-link class="nav-link" to="/">Home <span class="sr-only">(current)</span></router-link>
           </li>
+          <li class="nav-item">
+            <router-link class="nav-link" to="/upload">Upload<span class="sr-only">(current)</span></router-link>
+          </li>
         </ul>
       </div>
     </nav>
@@ -33,6 +36,7 @@ app.component('app-footer', {
     template: `
     <footer>
         <div class="container">
+            <hr>
             <p>Copyright &copy; {{ year }} Flask Inc.</p>
         </div>
     </footer>
@@ -57,6 +61,69 @@ const Home = {
     }
 };
 
+const UploadForm = {
+    name: "upload-form",
+    template: 
+    `
+    <div class="py-5">
+        <h3 class="font-weight-bold mb-4">Upload Form</h3>
+        <div class="form_response">
+            <div>
+                <div v-for="resp in response" class="alert alert-success">{{ resp.message }}</div>
+                <ul v-for="resp in error" class="alert alert-danger pl-4">
+                    <li class="pl-2">{{ resp.errors[0] }}</li>
+                    <li class="pl-2">{{ resp.errors[1] }}</li>
+                </ul>
+            </div>
+        </div>
+       <form id="uploadForm" @submit.prevent="uploadPhoto" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea class="form-control" id="description" required name="description" rows="3"></textarea>
+            </div>
+            <div class="form-group mb-4">
+                <label for="photo">Upload Photo</label>
+                <input type="file" class="form-control-file" required name="photo" id="photo">
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>      
+    </div>
+    `,
+    data: function() {
+        return {
+            response: [],
+            error: []
+        };
+    },
+    methods: {
+        uploadPhoto() {
+            let self = this;
+            let uploadForm = document.getElementById('uploadForm');
+            let form_data = new FormData(uploadForm);
+
+            fetch("/api/upload", {
+                method: 'POST',
+                body: form_data,
+                headers: {
+                   'X-CSRFToken': token 
+                },
+                credentials: 'same-origin'
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(jsonResponse) {
+                console.log(jsonResponse.result)
+                self.response = jsonResponse.result;
+                self.error = jsonResponse.errors;
+            })
+            .catch(function(error) {
+                console.log(error)
+            });
+        }
+    }
+};
+
 const NotFound = {
     name: 'NotFound',
     template: `
@@ -72,6 +139,7 @@ const NotFound = {
 // Define Routes
 const routes = [
     { path: "/", component: Home },
+    { path: "/upload", component: UploadForm },
     // Put other routes here
 
     // This is a catch all route in case none of the above matches
